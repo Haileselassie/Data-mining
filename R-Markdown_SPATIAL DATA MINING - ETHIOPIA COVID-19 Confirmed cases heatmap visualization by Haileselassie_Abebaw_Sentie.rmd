@@ -1,0 +1,105 @@
+---
+title: 'COVID 19 SPATIAL DATA ANALYIS IN ETHIOPIA REGIONAL LEVEL '
+author: "HAILESELASSIE ABEBAW"
+date: "31 August 2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+#install.packages("maptools")
+#install.packages("maptools")
+#install.packages("rgdal")
+#install.packages("raster")
+#install.packages("ggmap")
+#install.packages("scales")
+
+library(ggmap)
+library(scales)
+library(raster)
+library(plyr)
+library(ggplot2)
+library(rgdal)
+```
+
+```{r}
+
+Ethiopia<-getData("GADM", country="ETH", level=1)
+
+ 
+plot(Ethiopia, main = "Regional Boundaries in ETHIOPIA")
+```
+
+```{r}
+
+#UTM
+Ethiopia_UTM <-spTransform(Ethiopia, CRS("+init=EPSG:32737")) 
+
+Ethiopia_UTM@data$NAME_1
+
+region.data <- as.data.frame(Ethiopia_UTM@data)
+
+#write.csv(county.data,file="C:\\Users\\HAILESELASSIE\\Desktop\\ACE-DS\\Advanced Data Mining\\ASSIGNEMNTS\\Assignment 5\\Region Data.csv")
+
+confirmed.cases <- read.csv("C:\\Users\\HAILESELASSIE\\Desktop\\ACE-DS\\Advanced Data Mining\\ASSIGNEMNTS\\Assignment 5\\ETH Region Data Covid-19.csv",header=TRUE)
+#View(confirmed.cases)
+
+count_df<-data.frame(confirmed.cases[1:11,])
+attach(count_df)
+#View(count_df)
+
+Ethiopia_UTM@data$id <- rownames(Ethiopia_UTM@data)
+Ethiopia_UTM@data <- join(Ethiopia_UTM@data, count_df, by="NAME_1")
+Ethiopia_df <- fortify(Ethiopia_UTM)
+Ethiopia_df <- join(Ethiopia_df,Ethiopia_UTM@data, by="id")
+```
+
+```{r}
+library(ggiraph)
+
+ggplot() + 
+  geom_polygon(data = Ethiopia_df, aes(x = long, y = lat, group = group, fill =
+                                         Number_of_Covid_Cases), color = "purple", size = 0.25) +
+  theme(aspect.ratio=0.8)+
+  scale_fill_distiller(name="Confirmed Cases", palette ="Spectral", breaks = pretty_breaks(n = 5))+
+  labs(title="COVID-19 CONFIRMED CUMULATIVE CASES IN THE REGIONS")
+```
+
+
+```{r}
+#Interactive Map of COVID 19 Count Per region
+
+#install.packages('tmap')
+#install.packages("tmaptools")
+
+library(tmap)
+library(tmaptools)
+
+#COVID-19 Confirmed Cases Plotting with respective regions
+tmap_mode('view')
+tm_shape(Ethiopia_UTM) +
+  tm_polygons("Number_of_Covid_Cases",id="NAME_1")
+tmap_last()
+```
+
+
+```{r}
+#Save the Visualization to web format
+Ethiopia_covid_map<-tmap_last()
+tmap_save(Ethiopia_covid_map,"Ethiopia_covid_map.html")
+```
+
+
+
+
+
+
+
